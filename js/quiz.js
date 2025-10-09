@@ -219,6 +219,7 @@ class Store {
                 currentQuestionIndex: quiz.currentQuestionIndex,
                 timer: quiz.timer,
                 userAnswers: quiz.userAnswers,
+                questions: quiz.questions,
             }
             localStorage.setItem(this.STORAGE_KEY.PROGRESS, JSON.stringify(progress));
             return true;
