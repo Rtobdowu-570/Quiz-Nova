@@ -14,7 +14,7 @@ function () {
     _classCallCheck(this, Quiz);
 
     this.score = 0;
-    this.questions = this.shuffleQuestions(questions, 30);
+    this.questions = skipShuffle ? questions : this.shuffleQuestions(questions, 30);
     this.timer = 900; // 15 minutes in seconds
 
     this.currentQuestionIndex = 0;
@@ -269,8 +269,6 @@ function () {
     key: "saveProgress",
     // Auto save Quiz progress
     value: function saveProgress(quiz) {
-      var _this = this;
-
       var progress;
       return regeneratorRuntime.async(function saveProgress$(_context2) {
         while (1) {
@@ -283,39 +281,47 @@ function () {
                 userAnswers: quiz.userAnswers,
                 questions: quiz.questions
               };
-              _context2.next = 4;
-              return regeneratorRuntime.awrap(new Promise(function (resolve) {
-                localStorage.setItem(_this.STORAGE_KEY.PROGRESS, JSON.stringify(progress));
-                resolve();
-              }));
-
-            case 4:
+              localStorage.setItem(this.STORAGE_KEY.PROGRESS, JSON.stringify(progress));
               return _context2.abrupt("return", true);
 
-            case 7:
-              _context2.prev = 7;
+            case 6:
+              _context2.prev = 6;
               _context2.t0 = _context2["catch"](0);
               console.error('Error Saving progress:', _context2.t0);
               return _context2.abrupt("return", false);
 
-            case 11:
+            case 10:
             case "end":
               return _context2.stop();
           }
         }
-      }, null, null, [[0, 7]]);
+      }, null, this, [[0, 6]]);
     } // load saved quiz progress
 
   }, {
     key: "loadProgress",
     value: function loadProgress() {
-      try {
-        var savedProgress = localStorage.getItem(this.STORAGE_KEY.PROGRESS);
-        return savedProgress ? JSON.parse(savedProgress) : null;
-      } catch (error) {
-        console.error('Error loading progress:', error);
-        return null;
-      }
+      var savedProgress;
+      return regeneratorRuntime.async(function loadProgress$(_context3) {
+        while (1) {
+          switch (_context3.prev = _context3.next) {
+            case 0:
+              _context3.prev = 0;
+              savedProgress = localStorage.getItem(this.STORAGE_KEY.PROGRESS);
+              return _context3.abrupt("return", savedProgress ? JSON.parse(savedProgress) : null);
+
+            case 5:
+              _context3.prev = 5;
+              _context3.t0 = _context3["catch"](0);
+              console.error('Error loading progress:', _context3.t0);
+              return _context3.abrupt("return", null);
+
+            case 9:
+            case "end":
+              return _context3.stop();
+          }
+        }
+      }, null, this, [[0, 5]]);
     } // check for saved progress
 
   }, {
@@ -337,14 +343,12 @@ function () {
   }, {
     key: "saveCompletedQuiz",
     value: function saveCompletedQuiz(quiz) {
-      var _this2 = this;
-
       var History, quizRecord;
-      return regeneratorRuntime.async(function saveCompletedQuiz$(_context3) {
+      return regeneratorRuntime.async(function saveCompletedQuiz$(_context4) {
         while (1) {
-          switch (_context3.prev = _context3.next) {
+          switch (_context4.prev = _context4.next) {
             case 0:
-              _context3.prev = 0;
+              _context4.prev = 0;
               History = this.getHistory();
               quizRecord = {
                 date: new Date().toISOString().split('T')[0],
@@ -357,27 +361,21 @@ function () {
                 summary: quiz.summary
               };
               History.unshift(quizRecord);
-              _context3.next = 6;
-              return regeneratorRuntime.awrap(new Promise(function (resolve) {
-                localStorage.setItem(_this2.STORAGE_KEY.RESULTS, JSON.stringify(History));
-                resolve();
-              }));
+              localStorage.setItem(this.STORAGE_KEY.RESULTS, JSON.stringify(History));
+              return _context4.abrupt("return", true);
 
-            case 6:
-              return _context3.abrupt("return", true);
+            case 8:
+              _context4.prev = 8;
+              _context4.t0 = _context4["catch"](0);
+              console.error('Error saving completed quiz:', _context4.t0);
+              return _context4.abrupt("return", false);
 
-            case 9:
-              _context3.prev = 9;
-              _context3.t0 = _context3["catch"](0);
-              console.error('Error saving completed quiz:', _context3.t0);
-              return _context3.abrupt("return", false);
-
-            case 13:
+            case 12:
             case "end":
-              return _context3.stop();
+              return _context4.stop();
           }
         }
-      }, null, this, [[0, 9]]);
+      }, null, this, [[0, 8]]);
     }
   }, {
     key: "_formatAnswers",
@@ -424,58 +422,49 @@ var quizInstance; // display question on DOM load
 
 document.addEventListener('DOMContentLoaded', function _callee() {
   var shouldResume, progress;
-  return regeneratorRuntime.async(function _callee$(_context4) {
+  return regeneratorRuntime.async(function _callee$(_context5) {
     while (1) {
-      switch (_context4.prev = _context4.next) {
+      switch (_context5.prev = _context5.next) {
         case 0:
           if (!Store.hasSavedProgress()) {
-            _context4.next = 20;
+            _context5.next = 8;
             break;
           }
 
           shouldResume = confirm('You have a saved quiz progress. Do you want to resume?');
-
-          if (!shouldResume) {
-            _context4.next = 14;
-            break;
-          }
-
-          _context4.next = 5;
+          _context5.next = 4;
           return regeneratorRuntime.awrap(Store.loadProgress());
 
-        case 5:
-          progress = _context4.sent;
-          quizInstance = new Quiz(progress.questions || questions); // Use saved questions or default
-          // Restore state
+        case 4:
+          progress = _context5.sent;
 
-          quizInstance.currentQuestionIndex = progress.currentQuestionIndex;
-          quizInstance.timer = progress.timer;
-          quizInstance.userAnswers = progress.userAnswers;
-          UI.displayQuestionContent(quizInstance);
-          UI.startTimer(quizInstance);
-          _context4.next = 18;
+          if (shouldResume && progress) {
+            // Resume saved quiz
+            quizInstance = new Quiz(progress.questions, true); // Use saved questions or default
+
+            quizInstance.currentQuestionIndex = progress.currentQuestionIndex;
+            quizInstance.timer = progress.timer;
+            quizInstance.userAnswers = progress.userAnswers;
+          } else {
+            // Clear saved progress and start new quiz
+            Store.clearProgress();
+            quizInstance = new Quiz(questions);
+          }
+
+          _context5.next = 9;
           break;
 
-        case 14:
-          // Clear saved progress and start new quiz
-          Store.clearProgress();
-          quizInstance = new Quiz(questions);
-          UI.displayQuestionContent(quizInstance);
-          UI.startTimer(quizInstance);
-
-        case 18:
-          _context4.next = 23;
-          break;
-
-        case 20:
+        case 8:
           // No saved progress, start new quiz
           quizInstance = new Quiz(questions);
+
+        case 9:
           UI.displayQuestionContent(quizInstance);
           UI.startTimer(quizInstance);
 
-        case 23:
+        case 11:
         case "end":
-          return _context4.stop();
+          return _context5.stop();
       }
     }
   });
@@ -483,12 +472,12 @@ document.addEventListener('DOMContentLoaded', function _callee() {
 
 document.querySelector('.question-options').addEventListener('click', function _callee2(e) {
   var selectedOption;
-  return regeneratorRuntime.async(function _callee2$(_context5) {
+  return regeneratorRuntime.async(function _callee2$(_context6) {
     while (1) {
-      switch (_context5.prev = _context5.next) {
+      switch (_context6.prev = _context6.next) {
         case 0:
           if (!e.target.classList.contains('option')) {
-            _context5.next = 6;
+            _context6.next = 6;
             break;
           }
 
@@ -496,12 +485,12 @@ document.querySelector('.question-options').addEventListener('click', function _
 
           selectedOption = e.target.textContent;
           quizInstance.saveAnswer(quizInstance.currentQuestionIndex, selectedOption);
-          _context5.next = 6;
+          _context6.next = 6;
           return regeneratorRuntime.awrap(Store.saveProgress(quizInstance));
 
         case 6:
         case "end":
-          return _context5.stop();
+          return _context6.stop();
       }
     }
   });
@@ -515,16 +504,39 @@ var nextButton = document.querySelector('.next-button');
 nextButton.addEventListener('click', getResult);
 
 function getResult() {
-  if (quizInstance.currentQuestionIndex === quizInstance.totalQuestions - 1) {
-    // Show final results
-    UI.showFinalResults(quizInstance);
-  } else {
-    // Move to next question
-    UI.nextQuestion(quizInstance); // Check if NEXT question is the last one, then change button text
+  return regeneratorRuntime.async(function getResult$(_context7) {
+    while (1) {
+      switch (_context7.prev = _context7.next) {
+        case 0:
+          if (!(quizInstance.currentQuestionIndex === quizInstance.totalQuestions - 1)) {
+            _context7.next = 5;
+            break;
+          }
 
-    if (quizInstance.currentQuestionIndex === quizInstance.totalQuestions - 1) {
-      nextButton.textContent = 'Submit';
+          _context7.next = 3;
+          return regeneratorRuntime.awrap(UI.showFinalResults(quizInstance));
+
+        case 3:
+          _context7.next = 9;
+          break;
+
+        case 5:
+          // Move to next question
+          UI.nextQuestion(quizInstance);
+          _context7.next = 8;
+          return regeneratorRuntime.awrap(Store.saveProgress(quizInstance));
+
+        case 8:
+          // Check if NEXT question is the last one, then change button text
+          if (quizInstance.currentQuestionIndex === quizInstance.totalQuestions - 1) {
+            nextButton.textContent = 'Submit';
+          }
+
+        case 9:
+        case "end":
+          return _context7.stop();
+      }
     }
-  }
+  });
 }
 //# sourceMappingURL=quiz.dev.js.map

@@ -2,7 +2,7 @@
 class Quiz {
     constructor(questions) {
         this.score = 0;
-        this.questions = this.shuffleQuestions(questions, 30);
+        this.questions = skipShuffle ? questions : this.shuffleQuestions(questions, 30);
         this.timer = 900; // 15 minutes in seconds
         this.currentQuestionIndex = 0;
         this.totalQuestions = 30;
@@ -221,10 +221,7 @@ class Store {
                 userAnswers: quiz.userAnswers,
                 questions: quiz.questions,
             }
-            await new Promise( (resolve) => {
                 localStorage.setItem(this.STORAGE_KEY.PROGRESS, JSON.stringify(progress));
-                resolve();
-            })
             return true;
         } catch(error) {
             console.error('Error Saving progress:', error);
@@ -233,7 +230,7 @@ class Store {
     }
 
     // load saved quiz progress
-    static loadProgress() {
+    static async loadProgress() {
                 try {
                     const savedProgress = localStorage.getItem(this.STORAGE_KEY.PROGRESS);
                     return savedProgress ? JSON.parse(savedProgress) : null;
@@ -274,10 +271,7 @@ class Store {
             };
 
             History.unshift(quizRecord);
-            await new Promise( (resolve) => {
                 localStorage.setItem(this.STORAGE_KEY.RESULTS, JSON.stringify(History));
-                resolve();
-            });
             return true;
         }  catch(error) {
             console.error('Error saving completed quiz:', error);
@@ -330,32 +324,25 @@ let quizInstance;
 document.addEventListener('DOMContentLoaded', async () => {
     if (Store.hasSavedProgress()) {
         const shouldResume = confirm('You have a saved quiz progress. Do you want to resume?');
-    
-    if (shouldResume) {
         const progress = await Store.loadProgress();
-        quizInstance = new Quiz(progress.questions || questions); // Use saved questions or default
-
-        // Restore state
+    if (shouldResume && progress) {
+        // Resume saved quiz
+        quizInstance = new Quiz(progress.questions, true); // Use saved questions or default
         quizInstance.currentQuestionIndex = progress.currentQuestionIndex;
         quizInstance.timer = progress.timer;
         quizInstance.userAnswers = progress.userAnswers;
-
-        UI.displayQuestionContent(quizInstance);
-        UI.startTimer(quizInstance);
     }  else{
         // Clear saved progress and start new quiz
         Store.clearProgress();
         quizInstance = new Quiz(questions);
-        UI.displayQuestionContent(quizInstance);
-        UI.startTimer(quizInstance);
     }
 
     } else {
         // No saved progress, start new quiz
         quizInstance = new Quiz(questions);
-        UI.displayQuestionContent(quizInstance);
-        UI.startTimer(quizInstance);
     }
+    UI.displayQuestionContent(quizInstance);
+        UI.startTimer(quizInstance);
 });
 
 // Handle option selection
@@ -380,15 +367,16 @@ document.querySelector('.prev-button').addEventListener('click', () => {
 const  nextButton = document.querySelector('.next-button');
 nextButton.addEventListener('click', getResult);
 
-function getResult() {
+async function getResult() {
     if (quizInstance.currentQuestionIndex === quizInstance.totalQuestions - 1) {
         // Show final results
-        UI.showFinalResults(quizInstance);
+       await UI.showFinalResults(quizInstance);
 
 
     } else {
         // Move to next question
         UI.nextQuestion(quizInstance);
+        await Store.saveProgress(quizInstance);
 
          // Check if NEXT question is the last one, then change button text
         if (quizInstance.currentQuestionIndex === quizInstance.totalQuestions - 1) {
