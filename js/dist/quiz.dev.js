@@ -305,14 +305,14 @@ function () {
           date: new Date().toISOString().split('T')[0],
           score: quiz.score,
           totalQuestions: quiz.totalQuestions,
-          Answers: _formatAnswers(quiz),
+          Answers: this._formatAnswers(quiz),
           timeTaken: 900 - quiz.timer,
           // time taken in seconds
           remarks: quiz.remarks,
           summary: quiz.summary
         };
         History.unshift(quizRecord);
-        localStorage.setItem(this.STORAGE_KEY.RESULTS, JSON.stringify(quizResult));
+        localStorage.setItem(this.STORAGE_KEY.RESULTS, JSON.stringify(History));
         return true;
       } catch (error) {
         console.error('Error saving completed quiz:', error);
@@ -341,7 +341,7 @@ function () {
     // Get quiz history
     value: function getHistory() {
       try {
-        var history = localStorage.getItem(this.STORAGE_KET.RESULTS);
+        var history = localStorage.getItem(this.STORAGE_KEY.RESULTS);
         return history ? JSON.parse(history) : [];
       } catch (error) {
         console.error('Error getting quiz history:', error);
@@ -351,9 +351,14 @@ function () {
   }]);
 
   return Store;
-}(); // Event listeners
-// store quiz instance globally
+}(); // Storage keys
 
+
+Store.STORAGE_KEY = {
+  PROGRESS: 'quizProgress',
+  RESULTS: 'quizResults'
+}; // Event listeners
+// store quiz instance globally
 
 var quizInstance; // display question on DOM load
 

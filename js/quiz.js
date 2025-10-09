@@ -210,6 +210,8 @@ class UI {
 
 // Local Storage 
 class Store {
+
+
     // Auto save Quiz progress
     static saveProgress(quiz) {
         try {
@@ -261,14 +263,14 @@ class Store {
                 date: new Date().toISOString().split('T')[0],
                 score: quiz.score,
                 totalQuestions: quiz.totalQuestions,
-                Answers: _formatAnswers(quiz),
+                Answers: this._formatAnswers(quiz),
                 timeTaken: 900 - quiz.timer, // time taken in seconds
                 remarks: quiz.remarks,
                 summary: quiz.summary,
             };
 
             History.unshift(quizRecord);
-            localStorage.setItem(this.STORAGE_KEY.RESULTS, JSON.stringify(quizResult));
+            localStorage.setItem(this.STORAGE_KEY.RESULTS, JSON.stringify(History));
             return true;
         }  catch(error) {
             console.error('Error saving completed quiz:', error);
@@ -296,7 +298,7 @@ class Store {
     // Get quiz history
     static getHistory() {
         try {
-            const history = localStorage.getItem(this.STORAGE_KET.RESULTS); 
+            const history = localStorage.getItem(this.STORAGE_KEY.RESULTS); 
             return history ? JSON.parse(history) : [];
         } catch(error) {
             console.error('Error getting quiz history:', error);
@@ -304,6 +306,12 @@ class Store {
         }
     };
 }
+
+// Storage keys
+Store.STORAGE_KEY = {
+    PROGRESS: 'quizProgress',
+    RESULTS: 'quizResults',
+};
 
 
 // Event listeners
