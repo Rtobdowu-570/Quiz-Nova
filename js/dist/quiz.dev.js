@@ -224,18 +224,33 @@ function () {
   }, {
     key: "showFinalResults",
     value: function showFinalResults(quiz) {
-      quiz.stopTimer();
-      quiz.submitQuiz();
-      quiz.getRemarks();
-      quiz.getSummary();
-      Store.saveCompletedQuiz(quiz);
-      Store.clearProgress(); // Stop the timer
+      var timerDisplay;
+      return regeneratorRuntime.async(function showFinalResults$(_context) {
+        while (1) {
+          switch (_context.prev = _context.next) {
+            case 0:
+              quiz.stopTimer();
+              quiz.submitQuiz();
+              quiz.getRemarks();
+              quiz.getSummary();
+              _context.next = 6;
+              return regeneratorRuntime.awrap(Store.saveCompletedQuiz(quiz));
 
-      var timerDisplay = document.querySelector('.timer-display');
-      timerDisplay.textContent = '00:00'; // Hide quiz section and show results section
+            case 6:
+              Store.clearProgress(); // Stop the timer
 
-      document.querySelector('.question-container').style.display = 'none';
-      document.querySelector('.result-container').style.display = 'block';
+              timerDisplay = document.querySelector('.timer-display');
+              timerDisplay.textContent = '00:00'; // Hide quiz section and show results section
+
+              document.querySelector('.question-container').style.display = 'none';
+              document.querySelector('.result-container').style.display = 'block';
+
+            case 11:
+            case "end":
+              return _context.stop();
+          }
+        }
+      });
     }
   }]);
 
@@ -254,19 +269,41 @@ function () {
     key: "saveProgress",
     // Auto save Quiz progress
     value: function saveProgress(quiz) {
-      try {
-        var progress = {
-          currentQuestionIndex: quiz.currentQuestionIndex,
-          timer: quiz.timer,
-          userAnswers: quiz.userAnswers,
-          questions: quiz.questions
-        };
-        localStorage.setItem(this.STORAGE_KEY.PROGRESS, JSON.stringify(progress));
-        return true;
-      } catch (error) {
-        console.error('Error Saving progress:', error);
-        return false;
-      }
+      var _this = this;
+
+      var progress;
+      return regeneratorRuntime.async(function saveProgress$(_context2) {
+        while (1) {
+          switch (_context2.prev = _context2.next) {
+            case 0:
+              _context2.prev = 0;
+              progress = {
+                currentQuestionIndex: quiz.currentQuestionIndex,
+                timer: quiz.timer,
+                userAnswers: quiz.userAnswers,
+                questions: quiz.questions
+              };
+              _context2.next = 4;
+              return regeneratorRuntime.awrap(new Promise(function (resolve) {
+                localStorage.setItem(_this.STORAGE_KEY.PROGRESS, JSON.stringify(progress));
+                resolve();
+              }));
+
+            case 4:
+              return _context2.abrupt("return", true);
+
+            case 7:
+              _context2.prev = 7;
+              _context2.t0 = _context2["catch"](0);
+              console.error('Error Saving progress:', _context2.t0);
+              return _context2.abrupt("return", false);
+
+            case 11:
+            case "end":
+              return _context2.stop();
+          }
+        }
+      }, null, null, [[0, 7]]);
     } // load saved quiz progress
 
   }, {
@@ -300,25 +337,47 @@ function () {
   }, {
     key: "saveCompletedQuiz",
     value: function saveCompletedQuiz(quiz) {
-      try {
-        var History = this.getHistory();
-        var quizRecord = {
-          date: new Date().toISOString().split('T')[0],
-          score: quiz.score,
-          totalQuestions: quiz.totalQuestions,
-          Answers: this._formatAnswers(quiz),
-          timeTaken: 900 - quiz.timer,
-          // time taken in seconds
-          remarks: quiz.remarks,
-          summary: quiz.summary
-        };
-        History.unshift(quizRecord);
-        localStorage.setItem(this.STORAGE_KEY.RESULTS, JSON.stringify(History));
-        return true;
-      } catch (error) {
-        console.error('Error saving completed quiz:', error);
-        return false;
-      }
+      var _this2 = this;
+
+      var History, quizRecord;
+      return regeneratorRuntime.async(function saveCompletedQuiz$(_context3) {
+        while (1) {
+          switch (_context3.prev = _context3.next) {
+            case 0:
+              _context3.prev = 0;
+              History = this.getHistory();
+              quizRecord = {
+                date: new Date().toISOString().split('T')[0],
+                score: quiz.score,
+                totalQuestions: quiz.totalQuestions,
+                Answers: this._formatAnswers(quiz),
+                timeTaken: 900 - quiz.timer,
+                // time taken in seconds
+                remarks: quiz.remarks,
+                summary: quiz.summary
+              };
+              History.unshift(quizRecord);
+              _context3.next = 6;
+              return regeneratorRuntime.awrap(new Promise(function (resolve) {
+                localStorage.setItem(_this2.STORAGE_KEY.RESULTS, JSON.stringify(History));
+                resolve();
+              }));
+
+            case 6:
+              return _context3.abrupt("return", true);
+
+            case 9:
+              _context3.prev = 9;
+              _context3.t0 = _context3["catch"](0);
+              console.error('Error saving completed quiz:', _context3.t0);
+              return _context3.abrupt("return", false);
+
+            case 13:
+            case "end":
+              return _context3.stop();
+          }
+        }
+      }, null, this, [[0, 9]]);
     }
   }, {
     key: "_formatAnswers",
@@ -363,42 +422,89 @@ Store.STORAGE_KEY = {
 
 var quizInstance; // display question on DOM load
 
-document.addEventListener('DOMContentLoaded', function () {
-  if (Store.hasSavedProgress()) {
-    var shouldResume = confirm('You have a saved quiz progress. Do you want to resume?');
+document.addEventListener('DOMContentLoaded', function _callee() {
+  var shouldResume, progress;
+  return regeneratorRuntime.async(function _callee$(_context4) {
+    while (1) {
+      switch (_context4.prev = _context4.next) {
+        case 0:
+          if (!Store.hasSavedProgress()) {
+            _context4.next = 20;
+            break;
+          }
 
-    if (shouldResume) {
-      var progress = Store.loadProgress();
-      quizInstance = new Quiz(questions); // Restore state
+          shouldResume = confirm('You have a saved quiz progress. Do you want to resume?');
 
-      quizInstance.currentQuestionIndex = progress.currentQuestionIndex;
-      quizInstance.timer = progress.timer;
-      quizInstance.userAnswers = progress.userAnswers;
-      UI.displayQuestionContent(quizInstance);
-      UI.startTimer(quizInstance);
-    } else {
-      // Clear saved progress and start new quiz
-      Store.clearProgress();
-      quizInstance = new Quiz(questions);
-      UI.displayQuestionContent(quizInstance);
-      UI.startTimer(quizInstance);
+          if (!shouldResume) {
+            _context4.next = 14;
+            break;
+          }
+
+          _context4.next = 5;
+          return regeneratorRuntime.awrap(Store.loadProgress());
+
+        case 5:
+          progress = _context4.sent;
+          quizInstance = new Quiz(progress.questions || questions); // Use saved questions or default
+          // Restore state
+
+          quizInstance.currentQuestionIndex = progress.currentQuestionIndex;
+          quizInstance.timer = progress.timer;
+          quizInstance.userAnswers = progress.userAnswers;
+          UI.displayQuestionContent(quizInstance);
+          UI.startTimer(quizInstance);
+          _context4.next = 18;
+          break;
+
+        case 14:
+          // Clear saved progress and start new quiz
+          Store.clearProgress();
+          quizInstance = new Quiz(questions);
+          UI.displayQuestionContent(quizInstance);
+          UI.startTimer(quizInstance);
+
+        case 18:
+          _context4.next = 23;
+          break;
+
+        case 20:
+          // No saved progress, start new quiz
+          quizInstance = new Quiz(questions);
+          UI.displayQuestionContent(quizInstance);
+          UI.startTimer(quizInstance);
+
+        case 23:
+        case "end":
+          return _context4.stop();
+      }
     }
-  } else {
-    // No saved progress, start new quiz
-    quizInstance = new Quiz(questions);
-    UI.displayQuestionContent(quizInstance);
-    UI.startTimer(quizInstance);
-  }
+  });
 }); // Handle option selection
 
-document.querySelector('.question-options').addEventListener('click', function (e) {
-  if (e.target.classList.contains('option')) {
-    UI.selectedOption(e.target); // Save selected option
+document.querySelector('.question-options').addEventListener('click', function _callee2(e) {
+  var selectedOption;
+  return regeneratorRuntime.async(function _callee2$(_context5) {
+    while (1) {
+      switch (_context5.prev = _context5.next) {
+        case 0:
+          if (!e.target.classList.contains('option')) {
+            _context5.next = 6;
+            break;
+          }
 
-    var selectedOption = e.target.textContent;
-    quizInstance.saveAnswer(quizInstance.currentQuestionIndex, selectedOption);
-    Store.saveProgress(quizInstance);
-  }
+          UI.selectedOption(e.target); // Save selected option
+
+          selectedOption = e.target.textContent;
+          quizInstance.saveAnswer(quizInstance.currentQuestionIndex, selectedOption);
+          _context5.next = 6;
+          return regeneratorRuntime.awrap(Store.saveProgress(quizInstance));
+
+        case 6:
+        case "end":
+          return _context5.stop();
+      }
+    }
+  });
 }); // Handle previous button 
 
 document.querySelector('.prev-button').addEventListener('click', function () {

@@ -187,12 +187,12 @@ class UI {
     }
 
     // Show results
-    static showFinalResults(quiz) {
+    static  async showFinalResults(quiz) {
     quiz.stopTimer();
     quiz.submitQuiz();
     quiz.getRemarks();
     quiz.getSummary();
-    Store.saveCompletedQuiz(quiz);
+    await Store.saveCompletedQuiz(quiz);
     Store.clearProgress();
 
 
@@ -213,7 +213,7 @@ class Store {
 
 
     // Auto save Quiz progress
-    static saveProgress(quiz) {
+    static async saveProgress(quiz) {
         try {
             const progress = {
                 currentQuestionIndex: quiz.currentQuestionIndex,
@@ -221,7 +221,10 @@ class Store {
                 userAnswers: quiz.userAnswers,
                 questions: quiz.questions,
             }
-            localStorage.setItem(this.STORAGE_KEY.PROGRESS, JSON.stringify(progress));
+            await new Promise( (resolve) => {
+                localStorage.setItem(this.STORAGE_KEY.PROGRESS, JSON.stringify(progress));
+                resolve();
+            })
             return true;
         } catch(error) {
             console.error('Error Saving progress:', error);
@@ -256,7 +259,7 @@ class Store {
 
 
     // Save Completed quiz results
-    static saveCompletedQuiz(quiz) {
+    static async saveCompletedQuiz(quiz) {
         try {
             const History = this.getHistory()
 
@@ -271,7 +274,10 @@ class Store {
             };
 
             History.unshift(quizRecord);
-            localStorage.setItem(this.STORAGE_KEY.RESULTS, JSON.stringify(History));
+            await new Promise( (resolve) => {
+                localStorage.setItem(this.STORAGE_KEY.RESULTS, JSON.stringify(History));
+                resolve();
+            });
             return true;
         }  catch(error) {
             console.error('Error saving completed quiz:', error);
@@ -321,13 +327,13 @@ Store.STORAGE_KEY = {
 let quizInstance;
 
 // display question on DOM load
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     if (Store.hasSavedProgress()) {
         const shouldResume = confirm('You have a saved quiz progress. Do you want to resume?');
     
     if (shouldResume) {
-        const progress = Store.loadProgress();
-        quizInstance = new Quiz(questions);
+        const progress = await Store.loadProgress();
+        quizInstance = new Quiz(progress.questions || questions); // Use saved questions or default
 
         // Restore state
         quizInstance.currentQuestionIndex = progress.currentQuestionIndex;
@@ -353,14 +359,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Handle option selection
-document.querySelector('.question-options').addEventListener('click', (e) => {
+document.querySelector('.question-options').addEventListener('click', async (e) => {
     if (e.target.classList.contains('option')) {
         UI.selectedOption(e.target);
 
         // Save selected option
         const selectedOption = e.target.textContent;
         quizInstance.saveAnswer(quizInstance.currentQuestionIndex, selectedOption);
-        Store.saveProgress(quizInstance);
+        await Store.saveProgress(quizInstance);
     }
 });
 
