@@ -208,7 +208,9 @@ function () {
     value: function showFinalResults(quiz) {
       quiz.submitQuiz();
       quiz.getRemarks();
-      quiz.getSummary(); // Stop the timer
+      quiz.getSummary();
+      Store.saveCompletedQuiz(quiz);
+      Store.clearProgress(); // Stop the timer
 
       var timerDisplay = document.querySelector('.timer-display');
       timerDisplay.textContent = '00:00'; // Hide quiz section and show results section
@@ -219,21 +221,149 @@ function () {
   }]);
 
   return UI;
-}(); // Local Storage
+}(); // Local Storage 
 
 
-var Store = function Store() {
-  _classCallCheck(this, Store);
-}; // Event listeners
+var Store =
+/*#__PURE__*/
+function () {
+  function Store() {
+    _classCallCheck(this, Store);
+  }
+
+  _createClass(Store, null, [{
+    key: "saveProgress",
+    // Auto save Quiz progress
+    value: function saveProgress(quiz) {
+      try {
+        var progress = {
+          currentQuestionIndex: quiz.currentQuestionIndex,
+          timer: quiz.timer,
+          userAnswers: quiz.userAnswers
+        };
+        localStorage.setItem(this.STORAGE_KEY.PROGRESS, JSON.stringify(progress));
+        return true;
+      } catch (error) {
+        console.error('Error Saving progress:', error);
+        return false;
+      }
+    } // load saved quiz progress
+
+  }, {
+    key: "loadProgress",
+    value: function loadProgress() {
+      try {
+        var savedProgress = localStorage.getItem(this.STORAGE_KEY.PROGRESS);
+        return savedProgress ? JSON.parse(savedProgress) : null;
+      } catch (error) {
+        console.error('Error loading progress:', error);
+        return null;
+      }
+    } // check for saved progress
+
+  }, {
+    key: "hasSavedProgress",
+    value: function hasSavedProgress() {
+      return localStorage.getItem(this.STORAGE_KEY.PROGRESS) !== null;
+    } // clear saved progress after quiz completion
+
+  }, {
+    key: "clearProgress",
+    value: function clearProgress() {
+      try {
+        localStorage.removeItem(this.STORAGE_KEY.PROGRESS);
+      } catch (error) {
+        console.error('Error clearing progress:', error);
+      }
+    } // Save Completed quiz results
+
+  }, {
+    key: "saveCompletedQuiz",
+    value: function saveCompletedQuiz(quiz) {
+      try {
+        var History = this.getHistory();
+        var quizRecord = {
+          date: new Date().toISOString().split('T')[0],
+          score: quiz.score,
+          totalQuestions: quiz.totalQuestions,
+          Answers: _formatAnswers(quiz),
+          timeTaken: 900 - quiz.timer,
+          // time taken in seconds
+          remarks: quiz.remarks,
+          summary: quiz.summary
+        };
+        History.unshift(quizRecord);
+        localStorage.setItem(this.STORAGE_KEY.RESULTS, JSON.stringify(quizResult));
+        return true;
+      } catch (error) {
+        console.error('Error saving completed quiz:', error);
+        return false;
+      }
+    }
+  }, {
+    key: "_formatAnswers",
+    // Format Answers
+    value: function _formatAnswers(quiz) {
+      var formattedAnswers = {};
+      quiz.questions.forEach(function (question, index) {
+        var userAnswer = quiz.userAnswers[index];
+        formattedAnswers[index] = {
+          question: question.question,
+          options: question.options,
+          selected: userAnswer || 'Unanswered',
+          correct: question.answer,
+          isCorrect: userAnswer === question.answer
+        };
+      });
+      return formattedAnswers;
+    }
+  }, {
+    key: "getHistory",
+    // Get quiz history
+    value: function getHistory() {
+      try {
+        var history = localStorage.getItem(this.STORAGE_KET.RESULTS);
+        return history ? JSON.parse(history) : [];
+      } catch (error) {
+        console.error('Error getting quiz history:', error);
+        return [];
+      }
+    }
+  }]);
+
+  return Store;
+}(); // Event listeners
 // store quiz instance globally
 
 
 var quizInstance; // display question on DOM load
 
 document.addEventListener('DOMContentLoaded', function () {
-  quizInstance = new Quiz(questions);
-  UI.displayQuestionContent(quizInstance);
-  UI.startTimer(quizInstance);
+  if (Store.hasSavedProgress()) {
+    var shouldResume = confirm('You have a saved quiz progress. Do you want to resume?');
+
+    if (shouldResume) {
+      var progress = Store.loadProgress();
+      quizInstance = new Quiz(questions); // Restore state
+
+      quizInstance.currentQuestionIndex = progress.currentQuestionIndex;
+      quizInstance.timer = progress.timer;
+      quizInstance.userAnswers = progress.userAnswers;
+      UI.displayQuestionContent(quizInstance);
+      UI.startTimer(quizInstance);
+    } else {
+      // Clear saved progress and start new quiz
+      Store.clearProgress();
+      quizInstance = new Quiz(questions);
+      UI.displayQuestionContent(quizInstance);
+      UI.startTimer(quizInstance);
+    }
+  } else {
+    // No saved progress, start new quiz
+    quizInstance = new Quiz(questions);
+    UI.displayQuestionContent(quizInstance);
+    UI.startTimer(quizInstance);
+  }
 }); // Handle option selection
 
 document.querySelector('.question-options').addEventListener('click', function (e) {
@@ -242,6 +372,7 @@ document.querySelector('.question-options').addEventListener('click', function (
 
     var selectedOption = e.target.textContent;
     quizInstance.saveAnswer(quizInstance.currentQuestionIndex, selectedOption);
+    Store.saveProgress(quizInstance);
   }
 }); // Handle previous button 
 
