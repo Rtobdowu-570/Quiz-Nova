@@ -20,10 +20,20 @@ function () {
     this.currentQuestionIndex = 0;
     this.totalQuestions = 30;
     this.userAnswers = {};
-  } // Shuffle and limit questions
+    this.timerInterval = null;
+  } // Stop timer
 
 
   _createClass(Quiz, [{
+    key: "stopTimer",
+    value: function stopTimer() {
+      if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+        this.timerInterval = null;
+      }
+    } // Shuffle and limit questions
+
+  }, {
     key: "shuffleQuestions",
     value: function shuffleQuestions(questions, limit) {
       var shuffled = questions.sort(function () {
@@ -168,9 +178,14 @@ function () {
       var timer = quiz.timer,
           minutes,
           seconds;
-      var timerDisplay = document.querySelector('.timer-display'); // Update the timer every second
+      var timerDisplay = document.querySelector('.timer-display'); // clear any existing timer
 
-      var interval = setInterval(function () {
+      if (quiz.timerInterval) {
+        clearInterval(quiz.timerInterval);
+      } // Update the timer every second
+
+
+      quiz.timerInterval = setInterval(function () {
         minutes = parseInt(timer / 60, 10);
         seconds = parseInt(timer % 60, 10);
         minutes = minutes < 10 ? "0" + minutes : minutes;
@@ -178,10 +193,13 @@ function () {
         timerDisplay.textContent = "".concat(minutes, ":").concat(seconds);
 
         if (--timer < 0) {
-          clearInterval(interval); // Time's up logic here
+          clearInterval(quiz.timerInterval);
+          quiz.timerInterval = null; // Time's up, submit the quiz
 
           UI.showFinalResults(quiz);
         }
+
+        quiz.timer = timer; // update quiz timer state
       }, 1000);
     } // Move to next question
 
@@ -206,6 +224,7 @@ function () {
   }, {
     key: "showFinalResults",
     value: function showFinalResults(quiz) {
+      quiz.stopTimer();
       quiz.submitQuiz();
       quiz.getRemarks();
       quiz.getSummary();

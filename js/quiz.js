@@ -7,7 +7,16 @@ class Quiz {
         this.currentQuestionIndex = 0;
         this.totalQuestions = 30;
         this.userAnswers = {};
+        this.timerInterval = null;
     }
+
+    // Stop timer
+        stopTimer() {
+            if(this.timerInterval) {
+                clearInterval(this.timerInterval);
+                this.timerInterval = null;
+            }
+        }
 
     // Shuffle and limit questions
     shuffleQuestions(questions, limit) {
@@ -134,9 +143,15 @@ class UI {
     static startTimer(quiz) {
         let timer = quiz.timer, minutes, seconds;
         let timerDisplay = document.querySelector('.timer-display');
+
+        // clear any existing timer
+        if (quiz.timerInterval) {
+            clearInterval(quiz.timerInterval);
+        }
+
         
         // Update the timer every second
-        const interval = setInterval( () => {
+        quiz.timerInterval = setInterval( () => {
             minutes = parseInt(timer / 60, 10);
             seconds = parseInt(timer % 60, 10);
 
@@ -146,10 +161,12 @@ class UI {
             timerDisplay.textContent = `${minutes}:${seconds}`;
 
             if (--timer < 0) {
-                clearInterval(interval);
-                // Time's up logic here
+                clearInterval(quiz.timerInterval);
+                quiz.timerInterval = null;
+                // Time's up, submit the quiz
                 UI.showFinalResults(quiz);
             }
+            quiz.timer = timer; // update quiz timer state
         }, 1000);
     }
 
@@ -171,6 +188,7 @@ class UI {
 
     // Show results
     static showFinalResults(quiz) {
+    quiz.stopTimer();
     quiz.submitQuiz();
     quiz.getRemarks();
     quiz.getSummary();
